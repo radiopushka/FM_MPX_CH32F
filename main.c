@@ -105,9 +105,8 @@ int sum;
 int diff;
 int mpx_phase;
 void timer2_isr(){
-  //we have 58 cycles left for processing(lets leave one extra)
-  //this takes 5 cycles:
-  if(TIM2->INTFR&4==0){return;}
+  //this takes 4 cycles:
+  //if(TIM2->INTFR&4==0){return;}
   DAC->R12BDHR1=dac_data&4095;
   TIM2->INTFR&=~4;//clear interrupt flag
   //begin processor
@@ -115,17 +114,17 @@ void timer2_isr(){
   sum=left_channel+right_channel;//max value: 65535*2
   diff=right_channel-left_channel;//max_value: 65535
   phase=0;//1 cycle
-  if(diff<0){//3 cycles
+  if(diff<0){//6 cycles
 	  phase=MAX_ST_AMPLITUDE;
 	  diff=-diff;
   }
   diff=diff>>stdata_shift;//1 cycle
-  if(d38khz_phase>MAX_38_PHASE){//2cycles
+  if(d38khz_phase>MAX_38_PHASE){//5cycles
 	  d38khz_phase=0;
   }else{
 	  d38khz_phase++;
   }
-  if(d19khz_phase>MAX_19_PHASE){//2 cycles
+  if(d19khz_phase>MAX_19_PHASE){//5 cycles
   	  d19khz_phase=0;
   }else{
   	  d19khz_phase++;
@@ -134,19 +133,18 @@ void timer2_isr(){
   dac_data=((mpx_phase+sum)+(m19khz[d19khz_phase]*st_pilot_mult)>>st_pilot_shift)>>global_shift;//7 cycles
   //processing took:23 clock cycles
   //taken: 28 clock cycles, lets just make it 30 for good measure
-  //34 clock cycles left for data extraction
-  if(ADC1->STATR&2!=0){//if ADC conversion is complete
-	  	if(ADC1->RSQR1==0){
-	  			ADC1->RSQR1=1;
-	  			right_channel=ADC1->RDATAR;
+  if(ADC1->STATR&2!=0){//if ADC conversion is complete 4
+	  	if(ADC1->RSQR1==0){//4
+	  			ADC1->RSQR1=1;//1
+	  			right_channel=ADC1->RDATAR;//1
 	  	}else{
-	  			ADC1->RSQR1=0;
-	  			left_channel=ADC1->RDATAR;
+	  			ADC1->RSQR1=0;//1
+	  			left_channel=ADC1->RDATAR;//1
 	  	}
-	  	ADC1->STATR&=~2;
-	  	ADC1->CTLR2|=(1<<22);
-  }//ADC extract takes 8 clock cycles
-  //26 clock cycles to spare for 64 mhz 1 mhz sample rate
+	  	ADC1->STATR&=~2;//2
+	  	ADC1->CTLR2|=(1<<22);//2
+  }//ADC extract takes 14 clock cycles
+	//total 50 cycles
 }
 int calculate_shift(int mdata,int targdata){
 	int max=mdata;
@@ -181,6 +179,9 @@ void calculate_processing_constraints(){
 	global_shift=calculate_shift(total_signal_size,4095);
 
 }
+void TIM2_IRQHandler(void){
+	timer2_isr();
+}
 int main(void)
 {
 	//set system PLL to 144 mhz in system_ch...
@@ -188,9 +189,9 @@ int main(void)
 	setup_adc();
 	calculate_processing_constraints();
 	setup1mhz_timer();
-	while(1){
+	/*while(1){
 		timer2_isr();
-	}
+	}*/
     /*NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     Delay_Init();
     USART_Printf_Init(115200);
