@@ -47,29 +47,7 @@ int pilot_amp=6;//this percent of signal width
  * @brief   Main program.
  *
  * @return  none
- */
-char pll_multiplication=6;//64 mhz
-char inputdiv=0;
-void setup_PLL(){
-
-
-	RCC->CTLR=(0<<24)|(1<<16)|1;//disable PLL enable xtal and HSI
-	while(RCC->CTLR&(1<<17)==0);//wait for the xtal to start if it has not started
-	RCC->CFGR0=0;//reset
-	RCC->CFGR0|=(7<<24)|((pll_multiplication&15)<<18)|((inputdiv&1)<<17)|(1<<16)|1;
-	//^ output the pll clock, set the pll multiplication factor
-	//pll output=(pll_multiplication+2)*(8000/2) if inputdiv==1
-	//pll output=(pll_multiplication+2)*(8000) if inputdiv==0
-	//must stay under 72 mhz
-	RCC->CTLR=(1<<24)|(1<<16)|1;//enable the pll
-	while((RCC->CTLR&(1<<25))==0);//wait for PLL lock
-	RCC->CFGR0&=~(3);
-	RCC->CFGR0|=2;
-	//for 64 mhz
-	RCC->CFGR0|=(3<<14);//ADC clock 8 mhz
-	RCC->APB1PCENR=0;
-
-}
+*/
 void setup_pins(){
 //no need ADC and DAC need analog input mode which is 00 or default
 
@@ -92,10 +70,10 @@ void setup_adc(){
 	ADC1->RSQR1=0;//channel 0 ADC1
 	ADC1->CTLR2|=(1<<22);//start conversion
 }
-//timer is positive edge triggered, our clock frequency is 64 MHz
+//timer is positive edge triggered, our clock frequency is 144 MHz
 //interrupts are triggered half way up and at 0
-//we are dividing by 64 so we have a sampling frequency of 1 MHz
-int PWM_freq=64;
+//we are dividing by 144 so we have a sampling frequency of 1 MHz
+int PWM_freq=144;
 void setup1mhz_timer(){//can run 64 commands to process the audio
 	RCC->APB2PRSTR|=1;//using timer 2, reset
 	RCC->APB1PCENR|=1;//clock enable
@@ -205,7 +183,7 @@ void calculate_processing_constraints(){
 }
 int main(void)
 {
-	setup_PLL();
+	//set system PLL to 144 mhz in system_ch...
 	setup_dac();
 	setup_adc();
 	calculate_processing_constraints();
