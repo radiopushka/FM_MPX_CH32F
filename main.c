@@ -19,71 +19,78 @@
 */
 
 #include "debug.h"
-#include "ch32v10x.h"
-#include "ch32v10x_rcc.h"
-#include "ch32v10x_rtc.h"
-#include "ch32v10x_adc.h"
-#include "ch32v10x_gpio.h"
-#include "ch32v10x_misc.h"
 
-/* Global typedef */
 
 /* Global define */
-#define MAX_ST_AMPLITUDE 4081 //min:1023 max:65535
-#define MAX_PILOT_AMPLITUDE 4096
-#define MAX_38_PHASE 25
-#define MAX_19_PHASE 51
+#define MAX_ST_AMPLITUDE 4095 
+#define MAX_PILOT_AMPLITUDE 4095
+#define MAX_38_PHASE 51
+#define MAX_19_PHASE 103
 
 /* Global Variable */
-int m19khz[]={2048,2294,2538,2774,2999,3211,3406,3580,3733,3861,3962,4036,4081,4096,4081,4036,3962,3861,3733,3580,3406,3211,2999,2774,2538,2294,2048,1802,1558,1322,1097,885,690,516,363,235,134,60,15,0,15,60,134,235,363,516,690,885,1097,1322,1558,1802};
-int m38khz[]={2048,2538,2999,3406,3733,3962,4081,4081,3962,3733,3406,2999,2538,2048,1558,1097,690,363,134,15,15,134,363,690,1097,1558};
+
+int m38khz[]={2047,2293,2536,2772,2998,3209,3404,3579,3731,3859,3960,4034,4079,4094,4079,4034,3960,3859,3731,3579,3404,3209,2998,2772,2536,2293,2047,1801,1558,1322,1096,885,690,515,363,235,134,60,15,0,15,60,134,235,363,515,690,885,1096,1322,1558,1801};
+int m19khz[]={2047,2170,2293,2415,2536,2655,2772,2887,2998,3105,3209,3309,3404,3494,3579,3658,3731,3798,3859,3913,3960,4001,4034,4060,4079,4090,4094,4090,4079,4060,4034,4001,3960,3913,3859,3798,3731,3658,3579,3494,3404,3309,3209,3105,2998,2887,2772,2655,2536,2415,2293,2170,2047,1924,1801,1679,1558,1439,1322,1207,1096,989,885,785,690,600,515,436,363,296,235,181,134,93,60,34,15,4,0,4,15,34,60,93,134,181,235,296,363,436,515,600,690,785,885,989,1096,1207,1322,1439,1558,1679,1801,1924};
 
 int stereo_amp=0;
 int pilot_amp=6;//this percent of signal width
+
+int adc_cal=0;
 
 /*********************************************************************
  * @fn      main
  *
  * @brief   Main program.
- *
+ * right -PA0
+ * left - PA1
  * @return  none
 */
 void setup_pins(){
 //no need ADC and DAC need analog input mode which is 00 or default
-
+    RCC->APB2PCENR=(1<<2)|1;//gpioa clock enable
+    GPIOA->CFGLR=(0<<16)|(2<<6)|(3<<4);//50 mhz output speed
 }
 void setup_dac(){
-	RCC->APB2PRSTR|=(1<<29);//reset DAC
-	RCC->APB1PCENR|=(1<<29);//DAC clock enable
-	DAC->CTLR=(4<<3)|(1<<2)|3;//TIM2 trigger,channel 1 enabled
-	//DAC->R12BDHR1; is the input register and expects a 12 bit value
+    //GPIO_InitTypeDef ginit={0};
 
+    RCC->APB1PCENR|=(1<<29);//DAC clock enable
+    DAC->CTLR=1;//software trigger,channel 1 enabled
+    //DAC->R12BDHR1; is the input register and expects a 12 bit value
+    DAC->R12BDHR1=4000;
+
+    //DAC->SWTR=1;
 }
 //channel 0 ADC1 - right channel, channel 1 ADC1 - left channel
 void setup_adc(){
-	RCC->APB2PCENR=0;
-	RCC->APB2PRSTR|=(1<<9);//reset ADC
-	RCC->APB2PCENR|=(1<<9);//enable adc clock
-	ADC1->CTLR1=(1<<5);//enable software status
-	ADC1->CTLR2=(15<<17)|1;//software trigger
-	ADC1->RSQR1=0;//only convert one channel
-	ADC1->RSQR1=0;//channel 0 ADC1
-	ADC1->CTLR2|=(1<<22);//start conversion
+    RCC->CFGR0|=(3<<14);//prescale adc clock to 18 mhz
+    ADC1->SAMPTR2=2|(2<<3);// sample time 7.5 cycles
+    RCC->APB2PCENR|=(3<<9);//enable adc clock
+    ADC1->CTLR1=(1<<5);//enable software status
+    ADC1->CTLR2=(15<<17)|1;//software trigger
+    int sleep;
+    for(sleep=0;sleep<200;sleep++){}//wait for 4 ADC clock cycles
+    ADC1->CTLR2|=(1<<3);
+    while(((ADC1->CTLR2)&(1<<3))!=0);//init calibrate
+    ADC1->CTLR2|=4;
+    while(((ADC1->CTLR2)&4)!=0);//calibrate
+    adc_cal=ADC1->RDATAR;
+    ADC1->RSQR3=0;//only convert one channel, channel 0
+    ADC1->CTLR2|=(1<<22);//start conversion
 }
 //timer is positive edge triggered, our clock frequency is 144 MHz
 //interrupts are triggered half way up and at 0
 //we are dividing by 144 so we have a sampling frequency of 1 MHz
-int PWM_freq=144;
+int PWM_freq=144;// the interrupt is actually called at a frequency of 2 mhz
 void setup1mhz_timer(){//can run 64 commands to process the audio
-	RCC->APB2PRSTR|=1;//using timer 2, reset
-	RCC->APB1PCENR|=1;//clock enable
-	TIM2->CTLR1=(1<<2)|1;//enable edge alighnment counting up, counter overflow and underflow interrupt
-	TIM2->DMAINTENR=4;//interupt for capture compare timer2 compare capture 2
-	TIM2->CHCTLR1=(6<<12);//count up PWM mode
-	TIM2->CCER=(1<<4);//enable output just in case
-	TIM2->ATRLR=PWM_freq;
-	TIM2->CH2CVR=PWM_freq/2;
-	NVIC_EnableIRQ(44);//enable interrupt for TIM2
+    RCC->APB2PRSTR|=1;//using timer 2, reset
+    RCC->APB1PCENR|=1;//clock enable
+    TIM2->CTLR1=(1<<2)|1;//enable edge alighnment counting up, counter overflow and underflow interrupt
+    TIM2->DMAINTENR=4;//interupt for capture compare timer2 compare capture 2
+    TIM2->CHCTLR1=(6<<12)|(1<<15);//count up PWM mode
+    TIM2->CCER=(1<<4);//enable output just in case
+    TIM2->ATRLR=PWM_freq;
+    TIM2->CH2CVR=PWM_freq/2;
+    NVIC_EnableIRQ(44);//enable interrupt for TIM2
 
 
 }
@@ -104,95 +111,101 @@ int phase;
 int sum;
 int diff;
 int mpx_phase;
-void timer2_isr(){
-  //this takes 4 cycles:
+__attribute__((interrupt()))
+void TIM2_IRQHandler(void){
+  //this takes 5 cycles:
   //if(TIM2->INTFR&4==0){return;}
-  DAC->R12BDHR1=dac_data&4095;
-  TIM2->INTFR&=~4;//clear interrupt flag
+  TIM2->INTFR=0;//reset interrupt flag
+  if(dac_data>4095){
+      dac_data=4095;
+  }
+  DAC->R12BDHR1=dac_data;//1
   //begin processor
-  //next two lines, 2 cycles
-  sum=left_channel+right_channel;//max value: 65535*2
-  diff=right_channel-left_channel;//max_value: 65535
+  //next two lines, 4 cycles
+  sum=left_channel+right_channel;//max value: 4095*2
+  diff=right_channel-left_channel;//max_value: 4095
   phase=0;//1 cycle
   if(diff<0){//6 cycles
-	  phase=MAX_ST_AMPLITUDE;
-	  diff=-diff;
+      phase=MAX_ST_AMPLITUDE;
   }
-  diff=diff>>stdata_shift;//1 cycle
   if(d38khz_phase>MAX_38_PHASE){//5cycles
-	  d38khz_phase=0;
+      d38khz_phase=0;
   }else{
-	  d38khz_phase++;
+      d38khz_phase++;
   }
   if(d19khz_phase>MAX_19_PHASE){//5 cycles
-  	  d19khz_phase=0;
+      d19khz_phase=0;
   }else{
-  	  d19khz_phase++;
+      d19khz_phase++;
   }
-  mpx_phase=((phase-m38khz[d38khz_phase])*diff)>>mult_st_data_shift;//5 cycles
-  dac_data=((mpx_phase+sum)+(m19khz[d19khz_phase]*st_pilot_mult)>>st_pilot_shift)>>global_shift;//7 cycles
-  //processing took:23 clock cycles
-  //taken: 28 clock cycles, lets just make it 30 for good measure
-  if(ADC1->STATR&2!=0){//if ADC conversion is complete 4
-	  	if(ADC1->RSQR1==0){//4
-	  			ADC1->RSQR1=1;//1
-	  			right_channel=ADC1->RDATAR;//1
-	  	}else{
-	  			ADC1->RSQR1=0;//1
-	  			left_channel=ADC1->RDATAR;//1
-	  	}
-	  	ADC1->STATR&=~2;//2
-	  	ADC1->CTLR2|=(1<<22);//2
-  }//ADC extract takes 14 clock cycles
-	//total 50 cycles
+  mpx_phase=((m38khz[d38khz_phase]-phase)*diff)>>mult_st_data_shift;//5 cycles
+  dac_data=((mpx_phase+sum)+((m19khz[d19khz_phase]*st_pilot_mult)>>st_pilot_shift))>>global_shift;//7 cycles
+  //processing took:39 clock cycles
+  if(((ADC1->STATR)&2)!=0){//if ADC conversion is complete 5
+      if(ADC1->RSQR3==0){//4
+          ADC1->RSQR3=1;//1
+          right_channel=((ADC1->RDATAR)&4095);//2
+      }else{
+          ADC1->RSQR3=0;//1
+          left_channel=((ADC1->RDATAR)&4095);//2
+      }
+      ADC1->STATR&=~2;//2
+      ADC1->CTLR2|=(1<<22);//2
+  }//ADC extract takes 17 clock cycles
+    //total 56 cycles 
+    //take in the 2 jumps we get 62/72
 }
 int calculate_shift(int mdata,int targdata){
-	int max=mdata;
-	int mult=1;
-	int count;
-	for(count=0;(max/mult)>=targdata+1;count++){
-		mult=mult*2;
-	}
-	return count;
+    int max=mdata;
+    int mult=1;
+    int count;
+    for(count=0;(max/mult)>=targdata+1;count++){
+        mult=mult*2;
+    }
+    return count;
 }
 void calculate_processing_constraints(){
-	stdata_shift=calculate_shift(65535,MAX_ST_AMPLITUDE);
-	int mpx_shift=(65535>>stdata_shift)*MAX_ST_AMPLITUDE;
-	mult_st_data_shift=calculate_shift(mpx_shift,65535*2)-stereo_amp;
-	if(mult_st_data_shift<0){
-		mult_st_data_shift=0;
-	}
-	int total_st_mono=(mpx_shift>>mult_st_data_shift)+65535*2;
-	float dp=pilot_amp/100.0;
-	float fval=total_st_mono*dp;
-	int bsize=fval;
+    stdata_shift=0;
+    int mpx_shift=4095*MAX_ST_AMPLITUDE;
+    mult_st_data_shift=12-stereo_amp;//you should keep max st around 4095
+    if(mult_st_data_shift<0){
+        mult_st_data_shift=0;
+    }
+    int total_st_mono=(mpx_shift>>mult_st_data_shift)+4095;
+    float dp=pilot_amp/100.0;
+    float fval=total_st_mono*dp;
+    int bsize=fval;
 
-	if(MAX_PILOT_AMPLITUDE>bsize){
-		 st_pilot_shift=calculate_shift(MAX_PILOT_AMPLITUDE,bsize);
-		 st_pilot_mult=1;
-	}else if(MAX_PILOT_AMPLITUDE<bsize){
-		st_pilot_mult=bsize/MAX_PILOT_AMPLITUDE;
-		st_pilot_shift=0;
-	}
-	int total_signal_size=((MAX_PILOT_AMPLITUDE*st_pilot_mult)>>st_pilot_shift)+total_st_mono;
-	//12 bit dac so 4095 max
-	global_shift=calculate_shift(total_signal_size,4095);
+    if(MAX_PILOT_AMPLITUDE>bsize){
+         st_pilot_shift=calculate_shift(MAX_PILOT_AMPLITUDE,bsize);
+         st_pilot_mult=1;
+    }else if(MAX_PILOT_AMPLITUDE<bsize){
+        st_pilot_mult=bsize/MAX_PILOT_AMPLITUDE;
+        st_pilot_shift=0;
+    }
+    int total_signal_size=((MAX_PILOT_AMPLITUDE*st_pilot_mult)>>st_pilot_shift)+total_st_mono;
+    //12 bit dac so 4095 max
+    global_shift=calculate_shift(total_signal_size,4095)-1;
 
-}
-void TIM2_IRQHandler(void){
-	timer2_isr();
 }
 int main(void)
 {
-	//set system PLL to 144 mhz in system_ch...
-	setup_dac();
-	setup_adc();
-	calculate_processing_constraints();
-	setup1mhz_timer();
-	while(1);
-	/*while(1){
-		timer2_isr();
-	}*/
+    SystemCoreClockUpdate();
+    //set system PLL to 144 mhz in system_ch...
+    Delay_Init();
+    setup_pins();
+    setup_dac();
+    setup_adc();
+    calculate_processing_constraints();
+    setup1mhz_timer();
+    //USART_Printf_Init(115200);
+    while(1){
+      //  printf("%d\n",dac_data);
+       // DAC->R12BDHR1=3000;
+    }
+    /*while(1){
+        timer2_isr();
+    }*/
     /*NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     Delay_Init();
     USART_Printf_Init(115200);
@@ -204,4 +217,3 @@ int main(void)
     {
     }*/
 }
-
