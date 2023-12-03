@@ -189,6 +189,7 @@ int main(void)
 	setup_adc();
 	calculate_processing_constraints();
 	setup1mhz_timer();
+	while(1);
 	/*while(1){
 		timer2_isr();
 	}*/
