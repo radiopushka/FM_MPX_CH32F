@@ -60,7 +60,7 @@ int adc_cal=0;
 void setup_pins(){
 //no need ADC and DAC need analog input mode which is 00 or default
     RCC->APB2PCENR=(4<<2)|1;//gpioa gpioc clock enable
-  //  GPIOA->CFGLR=(0<<16)|(2<<6)|(3<<4);//50 mhz output speed
+    GPIOA->CFGLR=(2<<6)|(2<<2);//make the ADC inputs pulled to half
 }
 void setup_dac(){
     //GPIO_InitTypeDef ginit={0};
