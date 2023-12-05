@@ -60,7 +60,7 @@ int adc_cal=0;
 void setup_pins(){
 //no need ADC and DAC need analog input mode which is 00 or default
     RCC->APB2PCENR=(4<<2)|1;//gpioa gpioc clock enable
-    GPIOA->CFGLR=(2<<6)|(2<<2);//make the ADC inputs pulled to half
+    //GPIOA->CFGLR=(2<<6)|(2<<2);//make the ADC inputs pulled to half(no effect)
 }
 void setup_dac(){
     //GPIO_InitTypeDef ginit={0};
@@ -77,7 +77,7 @@ void setup_adc(){
     RCC->CFGR0|=(3<<14);//prescale adc clock to 18 mhz
     ADC1->SAMPTR2=2|(2<<3);// sample time 13.5 cycles
     RCC->APB2PCENR|=(3<<9);//enable adc clock
-    ADC1->CTLR1=(1<<5)|(1<<26)|(1<<27);//enable software status
+    ADC1->CTLR1=(1<<5)|(1<<26)|(1<<27);//enable software status, x4 gain amplifier, this seemed to work best for my laptop's sound card, do not use cheap sound cards though, their stereo output is low quality
     ADC1->CTLR2=(15<<17)|1;//software trigger
     int sleep;
     for(sleep=0;sleep<200;sleep++){}//wait for 4 ADC clock cycles
