@@ -44,7 +44,7 @@ int m38khz[]={2058,2637,3170,3613,3930,4095,4095,3930,3613,3170,2637,2058,1479,9
 
 int stereo_amp=1;
 int pilot_amp=18;//this percent of signal width
-int extra_st_att=1;
+int extra_st_att=0;
 
 int adc_cal=0;
 
@@ -77,7 +77,7 @@ void setup_adc(){
     RCC->CFGR0|=(3<<14);//prescale adc clock to 18 mhz
     ADC1->SAMPTR2=2|(2<<3);// sample time 13.5 cycles
     RCC->APB2PCENR|=(3<<9);//enable adc clock
-    ADC1->CTLR1=(1<<5);//enable software status
+    ADC1->CTLR1=(1<<5)|(1<<26)|(1<<27);//enable software status
     ADC1->CTLR2=(15<<17)|1;//software trigger
     int sleep;
     for(sleep=0;sleep<200;sleep++){}//wait for 4 ADC clock cycles
