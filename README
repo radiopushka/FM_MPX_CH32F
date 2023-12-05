@@ -5,3 +5,10 @@ CLOCK: 144 MHZ
 DAC OUTPUT (TO MPX INPUT ON TRANSMITTER): PA4
 LEFT -PA1
 RIGHT- PA0
+
+
+3.3v -> 3.5k resistor -> PA0 -> 500 ohms ->GND
+PA0->4.7uF capacitor -> Right channel
+
+3.3v -> 3.5k resistor -> PA1 -> 500 ohms ->GND
+PA1->4.7uF capacitor -> Left channel
