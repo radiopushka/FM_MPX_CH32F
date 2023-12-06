@@ -43,8 +43,9 @@ int m38khz[]={2058,2637,3170,3613,3930,4095,4095,3930,3613,3170,2637,2058,1479,9
 //int m38khz[]={2047,2679,3250,3703,3993,4095,3993,3703,3250,2679,2047,1415,844,391,101,0,101,391,844,1415};
 
 int stereo_amp=1;
-int pilot_amp=18;//this percent of signal width
-int extra_st_att=0;
+int pilot_amp=8;//this percent of signal width
+int extra_st_att=2;
+int sum_att=0;
 
 int adc_cal=0;
 
@@ -60,7 +61,7 @@ int adc_cal=0;
 void setup_pins(){
 //no need ADC and DAC need analog input mode which is 00 or default
     RCC->APB2PCENR=(4<<2)|1;//gpioa gpioc clock enable
-    //GPIOA->CFGLR=(2<<6)|(2<<2);//make the ADC inputs pulled to half(no effect)
+    GPIOA->CFGLR=(2<<6)|(2<<2);//make the ADC inputs pulled to half
 }
 void setup_dac(){
     //GPIO_InitTypeDef ginit={0};
@@ -68,7 +69,7 @@ void setup_dac(){
     RCC->APB1PCENR|=(1<<29);//DAC clock enable
     DAC->CTLR=1;//software trigger,channel 1 enabled
     //DAC->R12BDHR1; is the input register and expects a 12 bit value
-    DAC->R12BDHR1=4000;
+    DAC->R12BDHR1=0;
 
     //DAC->SWTR=1;
 }
@@ -77,7 +78,7 @@ void setup_adc(){
     RCC->CFGR0|=(3<<14);//prescale adc clock to 18 mhz
     ADC1->SAMPTR2=2|(2<<3);// sample time 13.5 cycles
     RCC->APB2PCENR|=(3<<9);//enable adc clock
-    ADC1->CTLR1=(1<<5)|(1<<26)|(1<<27);//enable software status, x4 gain amplifier, this seemed to work best for my laptop's sound card, do not use cheap sound cards though, their stereo output is low quality
+    ADC1->CTLR1=(1<<5)|(1<<26)|(0<<27);//enable software status, buffer enabled, gain set
     ADC1->CTLR2=(15<<17)|1;//software trigger
     int sleep;
     for(sleep=0;sleep<200;sleep++){}//wait for 4 ADC clock cycles
@@ -203,7 +204,7 @@ void TIM2_IRQHandler(void){
   sd38khz_phase=d38khz_phase;//1
   sleft_channel=left_channel;//1
   dac_data=edac_data;//1 cycles
-  // takes over 69 clock cycles
+  // takes over 72 clock cycles
 
 }
 int calculate_shift(int mdata,int targdata){
