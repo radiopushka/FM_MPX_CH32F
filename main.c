@@ -46,6 +46,7 @@ int stereo_amp=1;
 int pilot_amp=8;//this percent of signal width
 int extra_st_att=1;
 int sum_att=0;
+int global_vol=0;
 
 int adc_cal=0;
 
@@ -101,7 +102,7 @@ void setup1mhz_timer(){//can run 64 commands to process the audio
     TIM2->CTLR1=(1<<2)|1;//enable edge alighnment counting up, counter overflow and underflow interrupt
     TIM2->DMAINTENR=4;//interupt for capture compare timer2 compare capture 2
     TIM2->CHCTLR1=(6<<12)|(1<<15);//count up PWM mode
-    TIM2->CCER=(1<<4);//enable output just in case
+    TIM2->CCER=(1<<4);//enabn probablyle output just in case
     TIM2->ATRLR=PWM_freq;
     TIM2->CH2CVR=(PWM_freq/2);
     NVIC_EnableIRQ(44);//enable interrupt for TIM2
@@ -165,19 +166,18 @@ void TIM2_IRQHandler(void){
   register int pmultext=st_pilot_mult;//1
   register int mpx_phase=pullphase38-phase;//1 cycles
   pullphase38=m38khz[d38khz_phase];//1
+  register int echannel=sechannel;//1
   if(ddovf){//3 cycles
       edac_data=4095;
   }
-  register int echannel=sechannel;//1
-  mpx_phase=mpx_phase*diff;//1
   register int pilotphase=pullphase19*pmultext;//1
-  pullphase19=m19khz[d19khz_phase];//1
   register int adccv=(ADC1->STATR);//1
-  register int sval=(1<<22);//1
+  mpx_phase=mpx_phase*diff;//1
   register int pullctl=ADC1->CTLR2;//1
+  pullphase19=m19khz[d19khz_phase];//1
   dac_data_2=edac_data;//1
   register int cmpa=adccv&2;//1
-  pullctl=pullctl|sval;//1
+  pullctl=pullctl|4194304;//1
   mpx_phase=mpx_phase>>pmult_st_data_shift;//1
   register int tshift=pilotphase>>pst_pilot_shift;//1
   if(cmpa!=0){//if ADC conversion is complete 3
@@ -207,7 +207,7 @@ void TIM2_IRQHandler(void){
   sd38khz_phase=d38khz_phase;//1
   sleft_channel=left_channel;//1
   dac_data=edac_data;//1 cycles
-  // takes over 75 out of 86 clock cycles
+  // takes over 71 out of 86 clock cycles
 
 }
 int calculate_shift(int mdata,int targdata){
@@ -240,7 +240,7 @@ void calculate_processing_constraints(){
     }
     int total_signal_size=((MAX_PILOT_AMPLITUDE*st_pilot_mult)>>st_pilot_shift)+total_st_mono;
     //12 bit dac so 4095 max
-    global_shift=calculate_shift(total_signal_size,4095)-1;
+    global_shift=calculate_shift(total_signal_size,4095)-1-global_volume;
     mult_st_data_shift=mult_st_data_shift+extra_st_att;
 
 }
