@@ -7,10 +7,10 @@ LEFT -PA1
 RIGHT- PA0
 
 
-3.3v -> 3.5k resistor -> PA0 -> 500 ohms ->GND
-PA0->4.7uF capacitor -> Right channel
+3.3v -> in4007-> 1k-470R resistor -> PA0 -> 1k-470R resistor -> in4007 ->GND
+PA0->47uF capacitor -> Right channel
 
-3.3v -> 3.5k resistor -> PA1 -> 500 ohms ->GND
-PA1->4.7uF capacitor -> Left channel
+3.3v -> in4007-> 1k-470R resistor -> PA1 -> 1k-470R resistor -> in4007 ->GND
+PA1->47uF capacitor -> Left channel
 
 PA4 can go straight to the MPX input on your transmitter. You might need an amplifier but that depends on your transmitter, most likely you will need a variable resistor since PLL VCOs are very sensitive usually.
