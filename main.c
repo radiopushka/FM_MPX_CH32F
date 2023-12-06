@@ -125,9 +125,11 @@ int global_shift=0;
 int spullphase38=0;
 int sechannel=0;
 int spullphase19=0;
+int dac_data_2=0;//pipe-line like processing strategy, takes two stages for data to reach the dac
 __attribute__((interrupt()))
 void TIM2_IRQHandler(void){
   //trying to find ways to optimize speed, giving up on counting clock cycles
+  register int dac_pullout=dac_data_2;//1
   register int gshift=global_shift;//1
   register int right_channel=sright_channel;//1
   register int left_channel=sleft_channel;//1
@@ -136,6 +138,7 @@ void TIM2_IRQHandler(void){
   register int pullphase38=spullphase38;//1
   register int pullphase19=spullphase19;//1
   register int d19khz_phase=sd19khz_phase;//1
+  DAC->R12BDHR1=dac_pullout;//1 we cannot have this after if statements because they vary the length of execution and distort the stereo signal
   TIM2->INTFR=0;//reset interrupt flag 1 cycle
   register int diff=right_channel-left_channel;//max_value: 4095 1cycle
   edac_data=edac_data>>gshift;//1
@@ -172,7 +175,7 @@ void TIM2_IRQHandler(void){
   register int adccv=(ADC1->STATR);//1
   register int sval=(1<<22);//1
   register int pullctl=ADC1->CTLR2;//1
-  DAC->R12BDHR1=edac_data;//1
+  dac_data_2=edac_data;//1
   register int cmpa=adccv&2;//1
   pullctl=pullctl|sval;//1
   mpx_phase=mpx_phase>>pmult_st_data_shift;//1
@@ -204,7 +207,7 @@ void TIM2_IRQHandler(void){
   sd38khz_phase=d38khz_phase;//1
   sleft_channel=left_channel;//1
   dac_data=edac_data;//1 cycles
-  // takes over 72 clock cycles
+  // takes over 75 out of 86 clock cycles
 
 }
 int calculate_shift(int mdata,int targdata){
