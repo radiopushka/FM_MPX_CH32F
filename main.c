@@ -246,6 +246,7 @@ void calculate_processing_constraints(){
 }
 int main(void)
 {
+    SetSysClock();
     SystemCoreClockUpdate();
     //set system PLL to 144 mhz in system_ch...
     Delay_Init();
