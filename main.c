@@ -44,7 +44,7 @@ int m38khz[]={2058,2637,3170,3613,3930,4095,4095,3930,3613,3170,2637,2058,1479,9
 
 int stereo_amp=1;
 int pilot_amp=8;//this percent of signal width
-int extra_st_att=2;
+int extra_st_att=1;
 int sum_att=0;
 
 int adc_cal=0;
