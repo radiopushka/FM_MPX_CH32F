@@ -15,4 +15,4 @@ PA1->47uF capacitor -> Left channel
 
 PA4 can go straight to the MPX input on your transmitter. You might need an amplifier but that depends on your transmitter, most likely you will need a variable resistor since PLL VCOs are very sensitive usually.
 
-IN CASE YOUR AUDIO IS VERY GRAINY AND NOT CLEAR, PUT A 15 NF CAPACITOR BETWEEN PA4 AND GROUND, THEN RE ADJUST THE VOLUME
+IN CASE YOUR AUDIO IS VERY GRAINY AND NOT CLEAR, PUT A 12 NF CAPACITOR BETWEEN PA4 AND GROUND, THEN RE ADJUST THE VOLUME
