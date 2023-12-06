@@ -42,9 +42,9 @@ int m38khz[]={2058,2637,3170,3613,3930,4095,4095,3930,3613,3170,2637,2058,1479,9
 //size: 19
 //int m38khz[]={2047,2679,3250,3703,3993,4095,3993,3703,3250,2679,2047,1415,844,391,101,0,101,391,844,1415};
 
-int stereo_amp=1;
-int pilot_amp=8;//this percent of signal width
-int extra_st_att=1;
+int stereo_amp=0;
+int pilot_amp=20;//this percent of signal width
+int extra_st_att=0;
 int sum_att=0;
 int global_volume=0;
 
