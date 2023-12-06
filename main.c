@@ -46,7 +46,7 @@ int stereo_amp=1;
 int pilot_amp=8;//this percent of signal width
 int extra_st_att=1;
 int sum_att=0;
-int global_vol=0;
+int global_volume=0;
 
 int adc_cal=0;
 
@@ -246,7 +246,7 @@ void calculate_processing_constraints(){
 }
 int main(void)
 {
-    SetSysClock();
+    SystemInit();
     SystemCoreClockUpdate();
     //set system PLL to 144 mhz in system_ch...
     Delay_Init();
