@@ -160,8 +160,9 @@ void TIM2_IRQHandler(void){
       d38khz_phase=0;
   }
   register int ddovf=edac_data>4095;//1
-  if(j19){//3 cycles
+  if(j19){//4 cycles
       d19khz_phase=0;
+      d38khz_phase=0;
   }
   register int pmultext=st_pilot_mult;//1
   register int mpx_phase=pullphase38-phase;//1 cycles
@@ -207,7 +208,7 @@ void TIM2_IRQHandler(void){
   sd38khz_phase=d38khz_phase;//1
   sleft_channel=left_channel;//1
   dac_data=edac_data;//1 cycles
-  // takes over 71 out of 86 clock cycles
+  // takes over 72 out of 86 clock cycles
 
 }
 int calculate_shift(int mdata,int targdata){
