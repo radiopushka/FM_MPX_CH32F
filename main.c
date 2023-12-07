@@ -56,7 +56,6 @@ int adc_cal=0;
  * @brief   Main program.
  * right -PA1
  * left - PA0
- * PWM out- PA1
  * @return  none
 */
 void setup_pins(){
