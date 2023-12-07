@@ -54,8 +54,8 @@ int adc_cal=0;
  * @fn      main
  *
  * @brief   Main program.
- * right -PA0
- * left - PA1
+ * right -PA1
+ * left - PA0
  * PWM out- PA1
  * @return  none
 */
