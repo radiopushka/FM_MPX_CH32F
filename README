@@ -15,7 +15,7 @@ PA1->47uF capacitor -> Left channel
 
 PA4 can go straight to the MPX input on your transmitter. You might need an amplifier but that depends on your transmitter, most likely you will need a variable resistor since PLL VCOs are very sensitive usually.
 
-IN CASE YOUR AUDIO IS VERY GRAINY AND NOT CLEAR, PUT A 10 NF CAPACITOR BETWEEN PA4 AND GROUND, THEN RE ADJUST THE VOLUME
+IN CASE YOUR AUDIO IS VERY GRAINY AND NOT CLEAR, PUT A 5-2 NF CAPACITOR BETWEEN PA4 AND GROUND, THEN RE ADJUST THE VOLUME, COULD BE FEEDBACK INTO THE PLL-VCO
 
 
 FM MPX stereo generation involves the generation of two sine waves, one at 19 khz and one at 38 khz(2nd harmonic), when the 38 khz sine wave is in phase with the 19 khz sine wave, the Right headphone is louder than the left, when the 38 KHZ sine is 180
